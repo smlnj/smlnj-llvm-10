@@ -19,20 +19,27 @@
 #                          default release builds)
 #       -docs           -- build LLVM API documentation
 #       -config         -- configure, but do not compile
+#       -install <dir>  -- specify installation directory; default is this directory
 #       -ninja          -- generate build.ninja files (instead of Unix makefiles)
 #
+
+# get location of this script as an absolute path
+#
+CMDDIR=`dirname "$0"`
+LLVMDIR=$(cd $CMDDIR; pwd)
 
 usage() {
   echo "usage: build-llvm.sh [ options ]"
   echo "options:"
-  echo "    -h, -help     print this message and exit"
-  echo "    -all-targets  build a version of LLVM that supports all hardware targets"
-  echo "                  that are known to SML/NJ"
-  echo "    -build-cfgc   build the cfgc (CFG compiler) tool."
-  echo "    -debug        build a debug version of the LLVM libraries"
-  echo "    -docs         build LLVM API documentation"
-  echo "    -config       configure, but do not compile"
-  echo "    -ninja        generate build.ninja files (instead of Unix makefiles)"
+  echo "    -h, -help       print this message and exit"
+  echo "    -all-targets    build a version of LLVM that supports all hardware targets"
+  echo "                    that are known to SML/NJ"
+  echo "    -build-cfgc     build the cfgc (CFG compiler) tool."
+  echo "    -debug          build a debug version of the LLVM libraries"
+  echo "    -docs           build LLVM API documentation"
+  echo "    -config         configure, but do not compile"
+  echo "    -install <dir>  specify installation directory (default: $CMDDIR)"
+  echo "    -ninja          generate build.ninja files (instead of Unix makefiles)"
   exit $1
 }
 
@@ -41,13 +48,8 @@ USE_GOLD_LD=no
 NPROCS=2
 GENERATOR="Unix Makefiles"
 
-# the install location should be specified as an environment variable RUNTIMEDIR
-#
-if [ x"$SMLNJ_ROOT" != x ] ; then
-  INSTALL_PREFIX="$SMLNJ_ROOT/runtime"
-else
-  INSTALL_PREFIX=../../runtime
-fi
+# default place to put
+INSTALL_PREFIX="$LLVMDIR"
 
 # system specific defaults
 #
@@ -112,6 +114,14 @@ while [ "$#" != "0" ] ; do
     -config)
       CONFIG_ONLY=yes
       ;;
+    -install)
+      if [ "$#" != "0" ] ; then
+        INSTALL_PREFIX=$1; shift
+      else
+        echo "build-llvm.sh: missing installation path"
+        usage 1
+      fi
+      ;;
     -ninja)
       GENERATOR="Ninja"
       ;;
@@ -136,7 +146,8 @@ if [ $? != 0 ] ; then
   exit 1
 fi
 
-# most of the definitions are specified in the CMakePresets.json file
+# most of the definitions are specified in the CMakePresets.json file,
+# but we define a few here based on the command-line options
 #
 CMAKE_DEFS="\
   -DCMAKE_INSTALL_PREFIX=$INSTALL_PREFIX \
