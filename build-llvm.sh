@@ -43,6 +43,7 @@ usage() {
   exit $1
 }
 
+CONFIG_ONLY=no
 LLVM_BUILD_TYPE=Release
 USE_GOLD_LD=no
 NPROCS=2
