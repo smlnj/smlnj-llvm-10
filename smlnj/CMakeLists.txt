@@ -5,7 +5,7 @@
 #
 
 include_directories(include)
-add_subdirectory(smlnj)
+add_subdirectory(lib)
 
 if (SMLNJ_CFGC_BUILD)
   message(STATUS "cfgc tool enabled.")

@@ -27,8 +27,16 @@ endif()
 set(CMAKE_CXX_STANDARD 14 CACHE STRING "C++ standard to conform to")
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
 
-## Begin LLVM Configuration ##
+project(smlnj-llvm
+  VERSION 10.0.1
+  DESCRIPTION "LLVM 10.0.1 with modifications to support SML/NJ"
+  HOMEPAGE_URL https://smlnj.org
+  LANGUAGES C CXX)
 
+## Begin LLVM Configuration ##
+message(STATUS "** START LLVM CONFIGURATION **")
+add_subdirectory(llvm)
+message(STATUS "** LLVM CONFIGURATION DONE **")
 ## End LLVM Configuration ##
 
 # The CFG Code Generation Library

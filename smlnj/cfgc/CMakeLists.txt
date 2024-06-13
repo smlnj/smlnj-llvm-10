@@ -6,3 +6,5 @@
 
 set(SRCS
   main.cpp)
+
+add_executable(cfgc ${SRCS})
