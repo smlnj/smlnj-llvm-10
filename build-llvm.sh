@@ -93,7 +93,7 @@ esac
 
 # process command-line arguments
 #
-BUILD_CFGC=NO
+BUILD_CFGC=no
 while [ "$#" != "0" ] ; do
   arg=$1; shift
   case $arg in
@@ -104,7 +104,7 @@ while [ "$#" != "0" ] ; do
       TARGETS=$ALL_TARGETS
       ;;
     -build-cfgc)
-      BUILD_CFGC=YES
+      BUILD_CFGC=yes
       ;;
     -debug)
       LLVM_BUILD_TYPE=Debug
@@ -164,6 +164,10 @@ if [ x"$BUILD_DOCS" = xyes ] ; then
   CMAKE_DEFS="$CMAKE_DEFS -DLLVM_BUILD_DOCS=ON -DLLVM_INCLUDE_DOCS=ON -DLLVM_ENABLE_DOXYGEN=ON"
 fi
 
+if [ x"$BUILD_CFGC" = xyes ] ; then
+  CMAKE_DEFS="CMAKE_DEFS -DSMLNJ_CFGC_BUILD=ON"
+fi
+
 # remove the build directory if it exists
 #
 if [ -d build ] ; then
@@ -176,20 +180,13 @@ mkdir build
 cd build
 
 echo "build-llvm.sh: configuring build"
-echo "  cmake --preset=$PRESET -G \"$GENERATOR\" $CMAKE_DEFS ../src"
-cmake --preset=$PRESET -G "$GENERATOR" $CMAKE_DEFS ../llvm || exit 1
+echo "  cmake --preset=$PRESET -G \"$GENERATOR\" $CMAKE_DEFS .."
+cmake --preset=$PRESET -G "$GENERATOR" $CMAKE_DEFS .. || exit 1
 
 if [ x"$CONFIG_ONLY" = xno ] ; then
 
-  echo "build-llvm.sh: building on $NPROCS cores"
+  echo "build-llvm.sh: building LLVM on $NPROCS cores"
   echo "  cmake --build . -j $NPROCS -t install"
   time cmake --build . -j $NPROCS -t install
-
-  # if requested, build the CFG compiler
-  #
-  if [ x"$BUILD_CFGC" = xYES ] ; then
-    cd ../cfgc/src
-    make install
-  fi
 
 fi
