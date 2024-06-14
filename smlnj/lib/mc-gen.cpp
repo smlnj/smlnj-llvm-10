@@ -40,16 +40,7 @@ mc_gen::mc_gen (llvm::LLVMContext &context, const TargetInfo *info)
         assert(false);
     }
 
-llvm::dbgs() << "host CPU = " << llvm::sys::getHostCPUName() << "\n";
-
     llvm::TargetOptions tgtOptions;
-
-  // floating-point target options
-
-//    tgtOptions.setFP32DenormalMode (llvm::FPDenormal::DenormalMode::getIEEE());
-//    tgtOptions.setFPDenormalMode (llvm::FPDenormal::DenormalMode::getIEEE());
-
-// TODO: enable tgtOptions.EnableFastISel?
 
   // make sure that tail calls are optimized
   /* It turns out that setting the GuaranteedTailCallOpt flag to true causes

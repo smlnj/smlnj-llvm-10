@@ -14,7 +14,9 @@
 
 ObjfilePWriteStream::~ObjfilePWriteStream ()
 {
-    delete[] this->_data;
+    if (this->_data != nullptr) {
+        ::free(this->_data);
+    }
 }
 
 void ObjfilePWriteStream::write_impl (const char *ptr, size_t size)
@@ -49,10 +51,10 @@ constexpr static uint64_t kAlignMask = 16*1024 - 1;
 void ObjfilePWriteStream::_grow (size_t amount)
 {
     size_t newSz = (this->_capacity + amount + kAlignMask) & ~kAlignMask;
-    char *newBuf = new char[newSz];
+    char *newBuf = (char *)::malloc(newSz);
     if (this->_data != nullptr) {
         ::memcpy(newBuf, this->_data, this->_nBytes);
-        delete[] this->_data;
+        ::free(this->_data);
     }
     this->_data = newBuf;
     this->_capacity = newSz;

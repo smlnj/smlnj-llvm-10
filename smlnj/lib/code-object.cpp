@@ -10,8 +10,6 @@
  * All rights reserved.
  */
 
-#define BYTE_ORDER_LITTLE
-
 #include <iostream>
 #include "target-info.hpp"
 #include "code-object.hpp"
@@ -374,7 +372,7 @@ void CodeObject::dump (bool bits)
     if (bits && foundTextSect && (this->_sects.size() > 0)) {
       // first we create a scratch object to hold the relocated code
         size_t codeSzB = this->size();
-        uint8_t *bytes = new uint8_t [codeSzB];
+	uint8_t *bytes = (uint_t *)::malloc(codeZzB);
         this->getCode (bytes);
         llvm::dbgs () << "RELOCATED CODE\n";
         for (size_t i = 0;  i < codeSzB; i += 16) {
@@ -385,6 +383,7 @@ void CodeObject::dump (bool bits)
             }
             llvm::dbgs () << "\n";
         }
+	::free(bytes);
     }
 
 }
@@ -434,24 +433,6 @@ void CodeObject::_dumpRelocs (llvm::object::SectionRef const &sect)
 #else
                     << "]\n";
 #endif
-        } else {
-#if defined(OBJFF_MACHO)
-            llvm::object::DataRefImpl DRI = r.getRawDataRefImpl();
-            struct any_relocation_info {
-                    uint32_t r_word0, r_word1;
-                };
-#endif
-
-            llvm::dbgs() << "  " << this->_relocTypeToString(r.getType())
-                    << ": offset = " << llvm::format_hex(r.getOffset(), 10)
-#if defined(OBJFF_ELF)
-                    << "; addend = "
-                    << exitOnErr(llvm::object::ELFRelocationRef(r).getAddend())
-#elif defined(OBJFF_MACHO)
-                    << "; dataRefImpl = " << llvm::format_hex(DRI.d.a, 10)
-                    << ":" << llvm::format_hex(DRI.d.b, 10)
-#endif
-                    << "\n";
         }
     }
 
