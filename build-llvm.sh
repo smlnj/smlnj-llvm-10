@@ -141,7 +141,7 @@ fi
 
 # check that we have a version of CMake that understands presets
 #
-cmake llvm --list-presets > /dev/null 2>&1
+cmake --list-presets > /dev/null 2>&1
 if [ $? != 0 ] ; then
   echo "Installation of SML/NJ requires CMake version 3.19 or later"
   exit 1
@@ -165,7 +165,7 @@ if [ x"$BUILD_DOCS" = xyes ] ; then
 fi
 
 if [ x"$BUILD_CFGC" = xyes ] ; then
-  CMAKE_DEFS="CMAKE_DEFS -DSMLNJ_CFGC_BUILD=ON"
+  CMAKE_DEFS="$CMAKE_DEFS -DSMLNJ_CFGC_BUILD=ON"
 fi
 
 # remove the build directory if it exists

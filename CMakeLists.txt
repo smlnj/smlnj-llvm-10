@@ -33,14 +33,22 @@ project(smlnj-llvm
   HOMEPAGE_URL https://smlnj.org
   LANGUAGES C CXX)
 
+# build options
+#
+option (SMLNJ_CFGC_BUILD
+  "Enable building the cfgc command-line tool" OFF)
+
 ## Begin LLVM Configuration ##
 message(STATUS "** START LLVM CONFIGURATION **")
 add_subdirectory(llvm)
 message(STATUS "** LLVM CONFIGURATION DONE **")
 ## End LLVM Configuration ##
 
+# enable verbose makefiles during development
+#
+set(CMAKE_VERBOSE_MAKEFILE ON)
+
 # The CFG Code Generation Library
 #
-
 include_directories(include)
 add_subdirectory(smlnj)

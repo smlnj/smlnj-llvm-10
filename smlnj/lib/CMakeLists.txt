@@ -21,3 +21,5 @@ set(SRCS
   target-info.cpp)
 
 add_library(CFGCodeGen STATIC ${SRCS})
+
+target_include_directories(CFGCodeGen PRIVATE ${CMAKE_BINARY_DIR}/llvm/include ${CMAKE_SOURCE_DIR}/llvm/include)
