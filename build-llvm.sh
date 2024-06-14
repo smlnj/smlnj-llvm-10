@@ -186,7 +186,7 @@ cmake --preset=$PRESET -G "$GENERATOR" $CMAKE_DEFS .. || exit 1
 if [ x"$CONFIG_ONLY" = xno ] ; then
 
   echo "build-llvm.sh: building LLVM on $NPROCS cores"
-  echo "  cmake --build . -j $NPROCS -t install"
-  time cmake --build . -j $NPROCS -t install
+  echo "  cmake --install . -j $NPROCS"
+  time cmake --install . -j $NPROCS
 
 fi
