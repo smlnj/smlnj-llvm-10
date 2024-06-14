@@ -18,9 +18,9 @@
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/IR/Value.h"
 
-///
-#define TIME_CODEGEN 1
-#define VERIFY_LLVM 1
+#include "cfg.hpp"
+#include "code-buffer.hpp"
+#include "target-info.hpp"
 
 /// different output targets
 enum class output { PrintAsm, AsmFile, ObjFile, Memory };
@@ -60,7 +60,13 @@ int main (int argc, char **argv)
     bool emitLLVM = false;
     bool dumpBits = false;
     std::string src = "";
-    std::string targetArch = HOST_ARCH;
+#if defined(ARCH_AMD64)
+    std::string targetArch = "x86_64";
+#elif defined(ARCH_ARM64)
+    std::string targetArch = "aarch64";
+#else
+#  error unknown architeture
+#endif
 
     std::vector<std::string> args(argv+1, argv+argc);
 
@@ -143,7 +149,6 @@ bool setTarget (std::string const &target)
 
 }
 
-#if defined(TIME_CODEGEN)
 // timer support
 #include <time.h>
 
@@ -178,7 +183,6 @@ class Timer {
     }
     Timer (uint64_t t) : _ns100(t) { }
 };
-#endif // defined(TIME_CODEGEN)
 
 void codegen (std::string const & src, bool emitLLVM, bool dumpBits, output out)
 {
@@ -190,73 +194,37 @@ void codegen (std::string const & src, bool emitLLVM, bool dumpBits, output out)
 
     asdl::file_instream inS(src);
 
-#if defined(TIME_CODEGEN)
     std::cout << "read pickle ..." << std::flush;
     Timer unpklTimer = Timer::start();
-#endif // defined(TIME_CODEGEN)
     CFG::comp_unit *cu = CFG::comp_unit::read (inS);
-#if defined(TIME_CODEGEN)
     std::cout << " " << unpklTimer.msec() << "ms\n" << std::flush;
-#endif // defined(TIME_CODEGEN)
 
   // generate LLVM
-#if defined(TIME_CODEGEN)
     std::cout << " generate llvm ..." << std::flush;;
     Timer genTimer = Timer::start();
-#endif // defined(TIME_CODEGEN)
     cu->codegen (CodeBuf);
-#if defined(TIME_CODEGEN)
     std::cout << " " << genTimer.msec() << "ms\n" << std::flush;
-#endif // defined(TIME_CODEGEN)
 
     if (emitLLVM) {
 	CodeBuf->dump ();
     }
 
-#ifdef VERIFY_LLVM
-#if defined(TIME_CODEGEN)
-    Timer verifyTimer = Timer::start();
-#endif // defined(TIME_CODEGEN)
     if (! CodeBuf->verify ()) {
 	std::cerr << "Module verified\n";
     }
-#if defined(TIME_CODEGEN)
-    double verifyT = verifyTimer.msec();
-#endif // defined(TIME_CODEGEN)
-#else
-#if defined(TIME_CODEGEN)
-    double verifyT = 0.0;
-#endif // defined(TIME_CODEGEN)
-#endif
 
-#if defined(TIME_CODEGEN)
     std::cout << " optimize ..." << std::flush;;
     Timer optTimer = Timer::start();
-#endif // defined(TIME_CODEGEN)
     CodeBuf->optimize ();
-#if defined(TIME_CODEGEN)
     std::cout << " " << optTimer.msec() << "ms\n" << std::flush;
-#endif // defined(TIME_CODEGEN)
 
 //    if (emitLLVM) {
 //	CodeBuf->dump ();
 //    }
 
-#ifdef VERIFY_LLVM
-#if defined(TIME_CODEGEN)
-    Timer verifyTimer = Timer::start();
-#endif // defined(TIME_CODEGEN)
     if (! CodeBuf->verify ()) {
 	std::cerr << "Module verified after optimization\n";
     }
-#if defined(TIME_CODEGEN)
-    double verifyT = verifyTimer.msec();
-#endif // defined(TIME_CODEGEN)
-#else
-#if defined(TIME_CODEGEN)
-    double verifyT = 0.0;
-#endif // defined(TIME_CODEGEN)
-#endif
 
   // get the stem of the filename
     std::string stem(src);

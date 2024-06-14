@@ -12,5 +12,10 @@ set(SRCS
 
 add_executable(cfgc ${SRCS})
 add_dependencies(cfgc CFGCodeGen)
+
+target_compile_options(cfgc PRIVATE -fno-exceptions -fno-rtti)
+target_compile_definitions(cfgc PRIVATE ${OPSYS} ${ARCH})
 target_include_directories(cfgc PRIVATE ${CMAKE_BINARY_DIR}/llvm/include ${CMAKE_SOURCE_DIR}/llvm/include)
 target_link_libraries(cfgc ${LLVM_LIBS} CFGCodeGen)
+
+install(TARGETS cfgc)

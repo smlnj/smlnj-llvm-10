@@ -4,7 +4,28 @@
 # All rights reserved.
 #
 
+# determine the operating system
+#
+if (APPLE)
+  set(OPSYS "OPSYS_DARWIN")
+elseif (LINUX)
+  set(OPSYS "OPSYS_LINUX")
+else ()
+  message(FATAL_ERROR "unsupported operating system")
+endif()
+
+# determine the archicture
+#
+if (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "x86_64")
+  set(ARCH "ARCH_AMD64")
+elseif (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "aarch64")
+  set(ARCH "ARCH_ARM64")
+else ()
+  message(FATAL_ERROR "unsupported architecture ${CMAKE_HOST_SYSTEM_PROCESSOR}")
+endif()
+
 include_directories(include)
+add_subdirectory(include)
 add_subdirectory(lib)
 
 if (SMLNJ_CFGC_BUILD)
