@@ -47,7 +47,7 @@ CONFIG_ONLY=no
 LLVM_BUILD_TYPE=Release
 USE_GOLD_LD=no
 NPROCS=2
-GENERATOR="Unix Makefiles"
+GENERATOR="make"
 
 # default place to put the headers, libraries, and tools
 #
@@ -125,7 +125,7 @@ while [ "$#" != "0" ] ; do
       fi
       ;;
     -ninja)
-      GENERATOR="Ninja"
+      GENERATOR="ninja"
       ;;
     *)
       echo "build-llvm.sh: invalid option '$arg'"
@@ -180,14 +180,23 @@ echo "build-llvm.sh: mkdir build"
 mkdir build
 cd build
 
+if [ x"$GENERATOR" = make ] ; then
+  CMAKE_GENERATOR="Unix Makefiles"
+elif [ x"$GENERATOR" = ninja ] ; then
+  CMAKE_GENERATOR="Ninja"
+else
+  # default
+  CMAKE_GENERATOR="Unix Makefiles"
+fi
+
 echo "build-llvm.sh: configuring build"
-echo "  cmake --preset=$PRESET -G \"$GENERATOR\" $CMAKE_DEFS .."
-cmake --preset=$PRESET -G "$GENERATOR" $CMAKE_DEFS .. || exit 1
+echo "  cmake --preset=$PRESET -G \"$CMAKE_GENERATOR\" $CMAKE_DEFS .."
+cmake --preset=$PRESET -G "$CMAKE_GENERATOR" $CMAKE_DEFS .. || exit 1
 
 if [ x"$CONFIG_ONLY" = xno ] ; then
 
   echo "build-llvm.sh: building LLVM on $NPROCS cores"
-  echo "  cmake --install . -j $NPROCS"
-  time cmake --install . -j $NPROCS
+  echo "  $GENERATOR -j $NPROCS install"
+  time $GENERATOR -j $NPROCS install
 
 fi

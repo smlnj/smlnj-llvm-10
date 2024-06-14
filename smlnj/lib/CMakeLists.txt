@@ -22,6 +22,8 @@ set(SRCS
 
 add_library(CFGCodeGen STATIC ${SRCS})
 
+add_dependencies(CFGCodeGen llvm-headers)
+
 target_compile_options(CFGCodeGen PRIVATE -fno-exceptions -fno-rtti)
 target_compile_definitions(CFGCodeGen PRIVATE ${OPSYS} ${ARCH})
 target_include_directories(CFGCodeGen PRIVATE ${CMAKE_BINARY_DIR}/llvm/include ${CMAKE_SOURCE_DIR}/llvm/include)
