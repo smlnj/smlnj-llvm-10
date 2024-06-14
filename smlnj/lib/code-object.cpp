@@ -372,7 +372,7 @@ void CodeObject::dump (bool bits)
     if (bits && foundTextSect && (this->_sects.size() > 0)) {
       // first we create a scratch object to hold the relocated code
         size_t codeSzB = this->size();
-	uint8_t *bytes = (uint_t *)::malloc(codeZzB);
+	uint8_t *bytes = (uint8_t *)::malloc(codeSzB);
         this->getCode (bytes);
         llvm::dbgs () << "RELOCATED CODE\n";
         for (size_t i = 0;  i < codeSzB; i += 16) {
