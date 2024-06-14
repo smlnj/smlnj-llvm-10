@@ -49,7 +49,8 @@ USE_GOLD_LD=no
 NPROCS=2
 GENERATOR="Unix Makefiles"
 
-# default place to put
+# default place to put the headers, libraries, and tools
+#
 INSTALL_PREFIX="$LLVMDIR"
 
 # system specific defaults
