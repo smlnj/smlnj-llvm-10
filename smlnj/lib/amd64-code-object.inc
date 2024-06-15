@@ -61,7 +61,7 @@ llvm::dbgs() << "# PATCH SECTION " << sect.getName() << " @ " << llvm::format_he
         if (sect.codeObject()->symbols().end() != rr.getSymbol()) {
             // the patch value
             int32_t value = (int32_t)reloc.value;
-llvm::dbgs() << "## PATCH " << llvm::format_hex(reloc.addr,10) << "; value = " << value << "\n";
+//llvm::dbgs() << "## PATCH " << llvm::format_hex(reloc.addr,10) << "; value = " << value << "\n";
             switch (reloc.type) {
 #if defined(OBJFF_MACHO)
 	    case llvm::MachO::X86_64_RELOC_SIGNED:
