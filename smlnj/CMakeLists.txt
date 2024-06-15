@@ -18,7 +18,7 @@ endif()
 #
 if (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "x86_64")
   set(ARCH "ARCH_AMD64")
-elseif (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "aarch64")
+elseif (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "arm64")
   set(ARCH "ARCH_ARM64")
 else ()
   message(FATAL_ERROR "unsupported architecture ${CMAKE_HOST_SYSTEM_PROCESSOR}")
