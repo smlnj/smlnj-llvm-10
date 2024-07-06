@@ -1,6 +1,6 @@
 /// \file sml-registers.cpp
 ///
-/// \copyright 2020 The Fellowship of SML/NJ (https://smlnj.org)
+/// \copyright 2023 The Fellowship of SML/NJ (https://smlnj.org)
 /// All rights reserved.
 ///
 /// \brief Implementation of methods for the classes defined in "sml-registers.hpp"
@@ -27,7 +27,7 @@ reg_info::reg_info (sml_reg_id id, int idx, int off)
 
 /***** sml_registers methods *****/
 
-sml_registers::sml_registers (const TargetInfo *target)
+sml_registers::sml_registers (TargetInfo const *target)
 {
     if (target == nullptr) {
 	this->_nHWRegs = 0;

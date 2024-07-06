@@ -1,6 +1,6 @@
 /// \file asdl-stream.hpp
 ///
-/// \copyright 2020 The Fellowship of SML/NJ (https://smlnj.org)
+/// \copyright 2024 The Fellowship of SML/NJ (https://smlnj.org)
 /// All rights reserved.
 ///
 /// \brief Defines the input and output stream types for ASDL picklers.
