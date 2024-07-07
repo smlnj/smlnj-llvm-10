@@ -1,6 +1,6 @@
 /// \file sml-registers.hpp
 ///
-/// \copyright 2020 The Fellowship of SML/NJ (https://smlnj.org)
+/// \copyright 2023 The Fellowship of SML/NJ (https://smlnj.org)
 /// All rights reserved.
 ///
 /// \brief This file defines the `reg_state` class, which encapsulates the
@@ -18,17 +18,26 @@
 #include <string>
 #include <vector>
 
-// the CMachine special "registers".  These are registers that need to be
-// threaded through the environment and through function calls as extra
-// parameters.  On some targets, some of these may be allocated in the stack.
+/// the CMachine special "registers".  These are registers that need to be
+/// threaded through the environment and through function calls as extra
+/// parameters.  On some targets, some of these may be allocated in the stack.
 //
 enum class sml_reg_id {
+<<<<<<< HEAD
     ALLOC_PTR = 0,      // allocation pointer
     LIMIT_PTR,          // heap-limit pointer
     STORE_PTR,          // points to list of store records
     EXN_HNDLR,          // exception handler
     VAR_PTR,            // var_ptr register
     NUM_REGS            // the number of special registers
+=======
+    ALLOC_PTR = 0,      ///< allocation pointer
+    LIMIT_PTR,          ///< heap-limit pointer
+    STORE_PTR,          ///< points to list of store records
+    EXN_HNDLR,          ///< exception handler
+    VAR_PTR,            ///< var_ptr register
+    NUM_REGS            ///< the number of special registers
+>>>>>>> 60345143a0552f0bafdc31027e617b0e68ef7d81
 };
 
 class reg_info {
@@ -81,7 +90,7 @@ class sml_registers {
 
   // setup the register information for the specified target architecture
   //
-    sml_registers (const struct TargetInfo *target);
+    sml_registers (struct TargetInfo const *target);
 
   // does the target require the base address register?
     bool usesBasePtr () const { return this->_usesBasePtr; }

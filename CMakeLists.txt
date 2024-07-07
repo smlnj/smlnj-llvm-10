@@ -6,7 +6,7 @@
 
 # LLVM 10.0 only requires 3.4.3, but we'll require a more recent version
 #
-cmake_minimum_required(VERSION 3.20.0)
+cmake_minimum_required(VERSION 3.21.0)
 
 # Disable builds in the source tree to prevent corruption.
 if(" ${CMAKE_SOURCE_DIR}" STREQUAL " ${CMAKE_BINARY_DIR}")

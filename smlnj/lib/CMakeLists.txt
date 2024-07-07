@@ -26,7 +26,9 @@ add_dependencies(CFGCodeGen llvm-headers)
 
 target_compile_options(CFGCodeGen PRIVATE -fno-exceptions -fno-rtti)
 target_compile_definitions(CFGCodeGen PRIVATE ${OPSYS} ${ARCH})
-target_include_directories(CFGCodeGen PRIVATE ${CMAKE_BINARY_DIR}/llvm/include ${CMAKE_SOURCE_DIR}/llvm/include)
+target_include_directories(CFGCodeGen PRIVATE
+  ${CMAKE_BINARY_DIR}/smlnj/include
+  ${CMAKE_BINARY_DIR}/llvm/include ${CMAKE_SOURCE_DIR}/llvm/include)
 
 # enable targets in the code generator library
 #

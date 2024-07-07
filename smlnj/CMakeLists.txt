@@ -4,6 +4,14 @@
 # All rights reserved.
 #
 
+# workaround for older versions of CMake
+#
+if (CMAKE_VERSION VERSION_LESS 3.25)
+  if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(LINUX ON CACHE BOOL "Set to true when the target system is Linux" INTERNAL)
+  endif()
+endif()
+
 # determine the operating system
 #
 if (APPLE)

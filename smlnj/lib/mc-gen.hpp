@@ -1,6 +1,6 @@
 /// \file mc-gen.hpp
 ///
-/// \copyright 2020 The Fellowship of SML/NJ (https://smlnj.org)
+/// \copyright 2023 The Fellowship of SML/NJ (https://smlnj.org)
 /// All rights reserved.
 ///
 /// \brief Wrapper class for the low-level machine-specific parts of the code generator
