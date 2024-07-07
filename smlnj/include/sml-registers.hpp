@@ -23,12 +23,21 @@
 /// parameters.  On some targets, some of these may be allocated in the stack.
 //
 enum class sml_reg_id {
+<<<<<<< HEAD
+    ALLOC_PTR = 0,      // allocation pointer
+    LIMIT_PTR,          // heap-limit pointer
+    STORE_PTR,          // points to list of store records
+    EXN_HNDLR,          // exception handler
+    VAR_PTR,            // var_ptr register
+    NUM_REGS            // the number of special registers
+=======
     ALLOC_PTR = 0,      ///< allocation pointer
     LIMIT_PTR,          ///< heap-limit pointer
     STORE_PTR,          ///< points to list of store records
     EXN_HNDLR,          ///< exception handler
     VAR_PTR,            ///< var_ptr register
     NUM_REGS            ///< the number of special registers
+>>>>>>> 60345143a0552f0bafdc31027e617b0e68ef7d81
 };
 
 class reg_info {
