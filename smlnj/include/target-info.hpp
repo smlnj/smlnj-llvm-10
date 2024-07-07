@@ -1,6 +1,6 @@
 /// \file target-info.hpp
 ///
-/// \copyright 2020 The Fellowship of SML/NJ (https://smlnj.org)
+/// \copyright 2023 The Fellowship of SML/NJ (https://smlnj.org)
 /// All rights reserved.
 ///
 /// \brief Information about the target architecture and how SML is mapped
@@ -67,13 +67,14 @@ struct TargetInfo {
     /// the target info for the native (host) architecture
     static TargetInfo const *native;
 
-  // GC roots are std-link, std-clos, std-cont, callee saves, std-arg
+    /// return the number of GC roots, which are std-link, std-clos,
+    /// std-cont, the callee saves, and std-arg
     int numGCRoots () const { return this->numCalleeSaves + 4; }
 
     llvm::Triple getTriple() const;
 
-  /// given a number of bytes, round it up to the next multiple of the
-  /// target's word size
+    /// given a number of bytes, round it up to the next multiple of the
+    /// target's word size
     uint64_t roundToWordSz (uint64_t nBytes) const
     {
 	uint64_t mask = this->wordSzB - 1;

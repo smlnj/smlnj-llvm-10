@@ -51,6 +51,14 @@ void Die (const char *fmt, ...)
 [[noreturn]] void usage ()
 {
     std::cerr << "usage: cfgc [ -o | -S | -c ] [ --emit-llvm ] [ --bits ] [ --target <target> ] <pkl-file>\n";
+    std::cerr << "options:\n";
+    std::cerr << "    -o                -- generate an object file\n";
+    std::cerr << "    -S                -- emit target assembly code to a file\n";
+    std::cerr << "    -c                -- use JIT compiler and loader to produce code object\n";
+    std::cerr << "    -emit-llvm        -- emit generated LLVM assembly to standard output\n";
+    std::cerr << "    -bits             -- output the code-object bits (implies \"-c\" flag)\n";
+    std::cerr << "    -target <target>  -- specify the target architecture (default "
+              << HOST_ARCH << ")\n";
     exit (1);
 }
 
@@ -86,6 +94,7 @@ int main (int argc, char **argv)
 		emitLLVM = true;
 	    } else if (args[i] == "--bits") {
 		dumpBits = true;
+		out = output::Memory;
 	    } else if (args[i] == "--target") {
 		i++;
 		if (i < args.size()) {
@@ -186,10 +195,6 @@ class Timer {
 
 void codegen (std::string const & src, bool emitLLVM, bool dumpBits, output out)
 {
-#if defined(TIME_CODEGEN)
-    Timer totalTimer = Timer::start();
-#endif // defined(TIME_CODEGEN)
-
     assert (CodeBuf != nullptr && "call setTarget before calling codegen");
 
     asdl::file_instream inS(src);
@@ -199,7 +204,7 @@ void codegen (std::string const & src, bool emitLLVM, bool dumpBits, output out)
     CFG::comp_unit *cu = CFG::comp_unit::read (inS);
     std::cout << " " << unpklTimer.msec() << "ms\n" << std::flush;
 
-  // generate LLVM
+    // generate LLVM
     std::cout << " generate llvm ..." << std::flush;;
     Timer genTimer = Timer::start();
     cu->codegen (CodeBuf);
