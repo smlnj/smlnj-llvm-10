@@ -54,7 +54,7 @@ bool AMD64CodeObject::_includeDataSect (llvm::object::SectionRef const &sect)
 //
 void AMD64CodeObject::_resolveRelocsForSection (Section const &sect, uint8_t *code)
 {
-llvm::dbgs() << "# PATCH SECTION " << sect.getName() << " @ " << llvm::format_hex(sect.offset(), 10) << "\n";
+//llvm::dbgs() << "# PATCH SECTION " << sect.getName() << " @ " << llvm::format_hex(sect.offset(), 10) << "\n";
     for (auto rr : sect.relocations()) {
         Relocation reloc(sect, rr);
         // the patch value; we ignore the relocation record if the symbol is not defined
