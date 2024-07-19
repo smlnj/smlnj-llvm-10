@@ -1,14 +1,14 @@
-/// \file code-buffer.cpp
+/// \file context.cpp
 ///
 /// \copyright 2023 The Fellowship of SML/NJ (https://smlnj.org)
 /// All rights reserved.
 ///
-/// \brief This file implements the methods for the `code_buffer` class
+/// \brief This file implements the methods for the `Context` class
 ///
 /// \author John Reppy
 ///
 
-#include "code-buffer.hpp"
+#include "context.hpp"
 #include "target-info.hpp"
 #include "mc-gen.hpp"
 #include "cfg.hpp" // for argument setup
@@ -16,6 +16,9 @@
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/GlobalValue.h"
 #include "llvm/IR/Verifier.h"
+
+namespace smlnj {
+namespace cfgcg {
 
 /* control the adding of symbolic names to some values for easier debugging */
 #ifndef _DEBUG
@@ -27,44 +30,44 @@
 #define ML_HEAP_ADDR_SP		0		// immutable heap objects
 #define ML_REF_ADDR_SP		0		// mutable heap objects
 
-/***** class code_buffer member functions *****/
+/***** class Context member functions *****/
 
-code_buffer *code_buffer::create (const TargetInfo *tgtInfo)
+Context *Context::create (const TargetInfo *tgtInfo)
 {
-    code_buffer *buf = new code_buffer (tgtInfo);
+    Context *buf = new Context (tgtInfo);
 
     return buf;
 }
 
-code_buffer *code_buffer::create (std::string const & target)
+Context *Context::create (std::string const & target)
 {
     auto tgtInfo = TargetInfo::infoForTarget (target);
     if (tgtInfo == nullptr) {
 	return nullptr;
     }
 
-    code_buffer *buf = new code_buffer (tgtInfo);
+    Context *buf = new Context (tgtInfo);
 
     return buf;
 }
 
-code_buffer::code_buffer (const TargetInfo *target)
+Context::Context (const TargetInfo *target)
   : _target(target),
-    _context(), _builder(this->_context),
+    _builder(*this),
     _gen(nullptr),
   // initialize the register info
     _regInfo(target),
     _regState(this->_regInfo)
 {
-    this->_gen = new mc_gen (this->_context, target),
+    this->_gen = new MCGen (*this, target),
 
   // initialize the standard types that we use
-    this->i8Ty = llvm::IntegerType::get (this->_context, 8);
-    this->i16Ty = llvm::IntegerType::get (this->_context, 16);
-    this->i32Ty = llvm::IntegerType::get (this->_context, 32);
-    this->i64Ty = llvm::IntegerType::get (this->_context, 64);
-    this->f32Ty = Type::getPrimitiveType (this->_context, Type::FloatTyID);
-    this->f64Ty = Type::getPrimitiveType (this->_context, Type::DoubleTyID);
+    this->i8Ty = llvm::IntegerType::get (*this, 8);
+    this->i16Ty = llvm::IntegerType::get (*this, 16);
+    this->i32Ty = llvm::IntegerType::get (*this, 32);
+    this->i64Ty = llvm::IntegerType::get (*this, 64);
+    this->f32Ty = llvm::Type::getPrimitiveType (*this, llvm::Type::FloatTyID);
+    this->f64Ty = llvm::Type::getPrimitiveType (*this, llvm::Type::DoubleTyID);
 
     if (this->_target->wordSz == 32) {
 	this->intTy = this->i32Ty;
@@ -77,12 +80,12 @@ code_buffer::code_buffer (const TargetInfo *target)
     this->mlValueTy = this->intTy->getPointerTo ();
     this->objPtrTy = this->mlValueTy->getPointerTo ();
     this->bytePtrTy = this->i8Ty->getPointerTo (ML_HEAP_ADDR_SP);
-    this->voidTy = Type::getVoidTy (this->_context);
+    this->voidTy = llvm::Type::getVoidTy (*this);
 
   // "call-gc" types
     {
 	int n = target->numCalleeSaves + 4;
-	std::vector<Type *> gcTys = this->createParamTys (frag_kind::STD_FUN, n);
+	Types_t gcTys = this->createParamTys (frag_kind::STD_FUN, n);
 	for (int i = 0;  i < n;  ++i) {
 	    gcTys.push_back (this->mlValueTy);
 	}
@@ -97,11 +100,11 @@ code_buffer::code_buffer (const TargetInfo *target)
       // necessary to ensure that the correct values are in place at the point
       // where the Overflow exception will be raised.
       //
-	std::vector<Type *> tys;
+	Types_t tys;
 	int nArgs = this->_regInfo.numMachineRegs();
 	tys.reserve (nArgs);
 	for (int i = 0;  i < nArgs;  ++i) {
-	    if (this->_regInfo.machineReg(i)->id() <= sml_reg_id::STORE_PTR) {
+	    if (this->_regInfo.machineReg(i)->id() <= CMRegId::STORE_PTR) {
 		tys.push_back (this->objPtrTy);
 	    } else {
 		tys.push_back (this->mlValueTy);
@@ -113,9 +116,9 @@ code_buffer::code_buffer (const TargetInfo *target)
 
 } // constructor
 
-void code_buffer::beginModule (std::string const & src, int nClusters)
+void Context::beginModule (std::string const & src, int nClusters)
 {
-    this->_module = new llvm::Module (src, this->_context);
+    this->_module = new llvm::Module (src, *this);
 
     this->_gen->beginModule (this->_module);
 
@@ -139,24 +142,24 @@ void code_buffer::beginModule (std::string const & src, int nClusters)
     this->_readReg = nullptr;
     this->_spRegMD = nullptr;
 
-} // code_buffer::beginModule
+} // Context::beginModule
 
-void code_buffer::completeModule ()
+void Context::completeModule ()
 {
 }
 
-void code_buffer::optimize ()
+void Context::optimize ()
 {
     this->_gen->optimize (this->_module);
 }
 
-void code_buffer::endModule ()
+void Context::endModule ()
 {
     this->_gen->endModule();
     delete this->_module;
 }
 
-void code_buffer::beginCluster (CFG::cluster *cluster, llvm::Function *fn)
+void Context::beginCluster (CFG::cluster *cluster, llvm::Function *fn)
 {
     assert ((cluster != nullptr) && "undefined cluster");
     assert ((fn != nullptr) && "undefined function");
@@ -167,19 +170,19 @@ void code_buffer::beginCluster (CFG::cluster *cluster, llvm::Function *fn)
     this->_curFn = fn;
     this->_curCluster = cluster;
 
-} // code_buffer::beginCluster
+} // Context::beginCluster
 
-void code_buffer::endCluster ()
+void Context::endCluster ()
 {
-} // code_buffer::endCluster
+} // Context::endCluster
 
-void code_buffer::beginFrag ()
+void Context::beginFrag ()
 {
     this->_vMap.clear();
 
-} // code_buffer::beginFrag
+} // Context::beginFrag
 
-llvm::Function *code_buffer::newFunction (
+llvm::Function *Context::newFunction (
     llvm::FunctionType *fnTy,
     std::string const &name,
     bool isPublic)
@@ -202,9 +205,9 @@ llvm::Function *code_buffer::newFunction (
 
 // helper function to get the numbers of arguments/parameters for
 // a fragment
-code_buffer::arg_info code_buffer::_getArgInfo (frag_kind kind) const
+Context::arg_info Context::_getArgInfo (frag_kind kind) const
 {
-    code_buffer::arg_info info;
+    Context::arg_info info;
 
     info.nExtra = this->_regInfo.numMachineRegs();
 
@@ -239,9 +242,9 @@ code_buffer::arg_info code_buffer::_getArgInfo (frag_kind kind) const
 
 }
 
-llvm::FunctionType *code_buffer::createFnTy (frag_kind kind, std::vector<Type *> const & tys) const
+llvm::FunctionType *Context::createFnTy (frag_kind kind, Types_t const & tys) const
 {
-    std::vector<Type *> allParams = this->createParamTys (kind, tys.size());
+    Types_t allParams = this->createParamTys (kind, tys.size());
 
   // add the types from the function's formal parameters
     for (auto ty : tys) {
@@ -250,17 +253,17 @@ llvm::FunctionType *code_buffer::createFnTy (frag_kind kind, std::vector<Type *>
 
     return llvm::FunctionType::get (
 	this->voidTy,
-	llvm::ArrayRef<Type *>(allParams),
+	llvm::ArrayRef<llvm::Type *>(allParams),
 	false);
 
 }
 
-void code_buffer::_addExtraParamTys (std::vector<Type *> &tys, arg_info const &info) const
+void Context::_addExtraParamTys (Types_t &tys, arg_info const &info) const
 {
   // the parameter list starts with the special registers (i.e., alloc ptr, ...),
   //
     for (int i = 0;  i < info.nExtra;  ++i) {
-	if (this->_regInfo.machineReg(i)->id() <= sml_reg_id::STORE_PTR) {
+	if (this->_regInfo.machineReg(i)->id() <= CMRegId::STORE_PTR) {
 	    tys.push_back (this->objPtrTy);
 	} else {
 	    tys.push_back (this->mlValueTy);
@@ -273,9 +276,9 @@ void code_buffer::_addExtraParamTys (std::vector<Type *> &tys, arg_info const &i
 
 }
 
-std::vector<Type *> code_buffer::createParamTys (frag_kind kind, int n) const
+Types_t Context::createParamTys (frag_kind kind, int n) const
 {
-    std::vector<Type *> tys;
+    Types_t tys;
     arg_info info = this->_getArgInfo (kind);
 
     tys.reserve (info.numArgs(n));
@@ -293,7 +296,7 @@ std::vector<Type *> code_buffer::createParamTys (frag_kind kind, int n) const
 
 }
 
-void code_buffer::_addExtraArgs (Args_t &args, arg_info const &info) const
+void Context::_addExtraArgs (Args_t &args, arg_info const &info) const
 {
   // seed the args array with the extra arguments
     for (int i = 0;  i < info.nExtra;  ++i) {
@@ -305,7 +308,7 @@ void code_buffer::_addExtraArgs (Args_t &args, arg_info const &info) const
     }
 }
 
-Args_t code_buffer::createArgs (frag_kind kind, int n)
+Args_t Context::createArgs (frag_kind kind, int n)
 {
     Args_t args;
     arg_info info = this->_getArgInfo (kind);
@@ -324,7 +327,7 @@ Args_t code_buffer::createArgs (frag_kind kind, int n)
 
 // setup the incoming arguments for a standard function entry
 //
-void code_buffer::setupStdEntry (CFG::attrs *attrs, CFG::frag *frag)
+void Context::setupStdEntry (CFG::attrs *attrs, CFG::frag *frag)
 {
   // the order of incoming arguments is:
   //
@@ -348,8 +351,8 @@ void code_buffer::setupStdEntry (CFG::attrs *attrs, CFG::frag *frag)
     arg_info info = this->_getArgInfo(frag->get_kind());
 
   // initialize the register state
-    for (int i = 0, hwIx = 0;  i < reg_info::NUM_REGS;  ++i) {
-	reg_info const *info = this->_regInfo.info(static_cast<sml_reg_id>(i));
+    for (int i = 0, hwIx = 0;  i < CMRegInfo::NUM_REGS;  ++i) {
+	CMRegInfo const *info = this->_regInfo.info(static_cast<CMRegId>(i));
 	if (info->isMachineReg()) {
 	    llvm::Argument *arg = this->_curFn->getArg(hwIx++);
 #ifndef NO_NAMES
@@ -392,7 +395,7 @@ void code_buffer::setupStdEntry (CFG::attrs *attrs, CFG::frag *frag)
 
 }
 
-void code_buffer::setupFragEntry (CFG::frag *frag, std::vector<llvm::PHINode *> &phiNodes)
+void Context::setupFragEntry (CFG::frag *frag, std::vector<llvm::PHINode *> &phiNodes)
 {
     assert (frag->get_kind() == frag_kind::INTERNAL && "not an internal fragment");
 
@@ -400,7 +403,7 @@ void code_buffer::setupFragEntry (CFG::frag *frag, std::vector<llvm::PHINode *> 
 
   // initialize the register state
     for (int i = 0;  i < info.nExtra;  ++i) {
-	reg_info const *rInfo = this->_regInfo.machineReg(i);
+	CMRegInfo const *rInfo = this->_regInfo.machineReg(i);
 	this->_regState.set (rInfo->id(), phiNodes[i]);
     }
 
@@ -415,10 +418,10 @@ void code_buffer::setupFragEntry (CFG::frag *frag, std::vector<llvm::PHINode *> 
 	params[i]->bind (this, phiNodes[info.nExtra + info.basePtr + i]);
     }
 
-} // code_buffer::setupFragEntry
+} // Context::setupFragEntry
 
-llvm::Constant *code_buffer::createGlobalAlias (
-    Type *ty,
+llvm::Constant *Context::createGlobalAlias (
+    llvm::Type *ty,
     llvm::Twine const &name,
     llvm::Constant *v)
 {
@@ -434,7 +437,7 @@ llvm::Constant *code_buffer::createGlobalAlias (
     return alias;
 }
 
-llvm::Constant *code_buffer::labelDiff (llvm::Function *f1, llvm::Function *f2)
+llvm::Constant *Context::labelDiff (llvm::Function *f1, llvm::Function *f2)
 {
   // define an alias for the value `(lab - curFn)`
     return this->createGlobalAlias (
@@ -448,7 +451,7 @@ llvm::Constant *code_buffer::labelDiff (llvm::Function *f1, llvm::Function *f2)
 
 }
 
-llvm::Constant *code_buffer::blockDiff (llvm::BasicBlock *bb)
+llvm::Constant *Context::blockDiff (llvm::BasicBlock *bb)
 {
     return this->createGlobalAlias (
 	this->intTy,
@@ -461,7 +464,7 @@ llvm::Constant *code_buffer::blockDiff (llvm::BasicBlock *bb)
 
 }
 
-Value *code_buffer::evalLabel (llvm::Function *fn)
+llvm::Value *Context::evalLabel (llvm::Function *fn)
 {
     if (this->_target->hasPCRel) {
 #ifdef XXX
@@ -481,7 +484,7 @@ Value *code_buffer::evalLabel (llvm::Function *fn)
 		this->mlValueTy));
     }
     else {
-	Value *basePtr = this->_regState.getBasePtr();
+	llvm::Value *basePtr = this->_regState.getBasePtr();
 
 	assert ((basePtr != nullptr) && "basePtr is not defined");
 
@@ -495,28 +498,28 @@ Value *code_buffer::evalLabel (llvm::Function *fn)
 	return labAdr;
     }
 
-} // code_buffer::evalLabel
+} // Context::evalLabel
 
-void code_buffer::_initSPAccess ()
+void Context::_initSPAccess ()
 {
     assert ((this->_readReg == nullptr) && (this->_spRegMD == nullptr));
     this->_readReg = _getIntrinsic (llvm::Intrinsic::read_register, this->intTy);
     this->_spRegMD = llvm::MDNode::get (
-	this->_context,
-	llvm::MDString::get(this->_context, this->_target->spName));
+	*this,
+	llvm::MDString::get(*this, this->_target->spName));
 
 }
 
 // private function for loading a special register from memory
-Value *code_buffer::_loadMemReg (sml_reg_id r)
+llvm::Value *Context::_loadMemReg (CMRegId r)
 {
     auto info = this->_regInfo.info(r);
     return this->_loadFromStack (info->offset(), info->name());
 
-} // code_buffer::_loadMemReg
+} // Context::_loadMemReg
 
 // private function for setting a special memory register
-void code_buffer::_storeMemReg (sml_reg_id r, Value *v)
+void Context::_storeMemReg (CMRegId r, llvm::Value *v)
 {
     auto info = this->_regInfo.info(r);
     auto stkAddr = this->stkAddr (v->getType()->getPointerTo(), info->offset());
@@ -525,17 +528,17 @@ void code_buffer::_storeMemReg (sml_reg_id r, Value *v)
 	stkAddr,
 	llvm::MaybeAlign (this->_wordSzB));
 
-} // code_buffer::_storeMemReg
+} // Context::_storeMemReg
 
 // utility function for allocating a record of ML values (pointers or
 // tagged ints).
 //
-Value *code_buffer::allocRecord (Value *desc, Args_t const & args)
+llvm::Value *Context::allocRecord (llvm::Value *desc, Args_t const & args)
 {
     assert (desc->getType() == this->mlValueTy && "descriptor should be ML Value");
 
     int len = args.size();
-    Value *allocPtr = this->mlReg (sml_reg_id::ALLOC_PTR);
+    llvm::Value *allocPtr = this->mlReg (CMRegId::ALLOC_PTR);
 
   // write object descriptor
     this->build().CreateAlignedStore (desc, allocPtr, llvm::MaybeAlign (this->_wordSzB));
@@ -549,15 +552,15 @@ Value *code_buffer::allocRecord (Value *desc, Args_t const & args)
     }
 
   // compute the object's address and cast it to an ML value
-    Value *obj = this->asMLValue (this->createGEP (allocPtr, 1));
+    llvm::Value *obj = this->asMLValue (this->createGEP (allocPtr, 1));
 
   // bump the allocation pointer
-    this->setMLReg (sml_reg_id::ALLOC_PTR, this->createGEP (allocPtr, len + 1));
+    this->setMLReg (CMRegId::ALLOC_PTR, this->createGEP (allocPtr, len + 1));
 
     return obj;
 }
 
-void code_buffer::callGC (
+void Context::callGC (
     Args_t const & roots,
     std::vector<LambdaVar::lvar> const & newRoots)
 {
@@ -565,7 +568,7 @@ void code_buffer::callGC (
 	&& "arity mismatch in GC call");
 
   // get the address of the "call-gc" entry
-    Value *callGCFn = this->_loadFromStack (this->_target->callGCOffset, "callGC");
+    llvm::Value *callGCFn = this->_loadFromStack (this->_target->callGCOffset, "callGC");
 
   // call the garbage collector.  The return type of the GC is a struct
   // that contains the post-GC values of the argument registers
@@ -577,8 +580,8 @@ void code_buffer::callGC (
     call->setTailCallKind (llvm::CallInst::TCK_NoTail);
 
   // restore the register state from the return struct
-    for (unsigned i = 0, hwIx = 0;  i < reg_info::NUM_REGS;  ++i) {
-	reg_info const *info = this->_regInfo.info(static_cast<sml_reg_id>(i));
+    for (unsigned i = 0, hwIx = 0;  i < CMRegInfo::NUM_REGS;  ++i) {
+	CMRegInfo const *info = this->_regInfo.info(static_cast<CMRegId>(i));
 	if (info->isMachineReg()) {
 	    auto reg = this->_builder.CreateExtractValue(call, { hwIx });
 	    this->setMLReg (info->id(), reg);
@@ -592,24 +595,24 @@ void code_buffer::callGC (
 	this->insertVal (lv, this->_builder.CreateExtractValue(call, { ix++ }));
     }
 
-} // code_buffer::callGC
+} // Context::callGC
 
 // return branch-weight meta data, where `prob` represents the probability of
 // the true branch and is in the range 1..999.
-llvm::MDNode *code_buffer::branchProb (int prob)
+llvm::MDNode *Context::branchProb (int prob)
 {
-    auto name = llvm::MDString::get(this->_context, "branch_weights");
+    auto name = llvm::MDString::get(*this, "branch_weights");
     auto trueProb = llvm::ValueAsMetadata::get(this->i32Const(prob));
     auto falseProb = llvm::ValueAsMetadata::get(this->i32Const(1000 - prob));
-    auto tpl = llvm::MDTuple::get(this->_context, {name, trueProb, falseProb});
+    auto tpl = llvm::MDTuple::get(*this, {name, trueProb, falseProb});
 
     return tpl;
 
-} // code_buffer::branchProb
+} // Context::branchProb
 
 // generate a type cast for an actual to formal transfer.
 //
-Value *code_buffer::castTy (Type *srcTy, Type *tgtTy, Value *v)
+llvm::Value *Context::castTy (llvm::Type *srcTy, llvm::Type *tgtTy, llvm::Value *v)
 {
     if (tgtTy->isPointerTy()) {
 	if (srcTy->isPointerTy()) {
@@ -626,15 +629,15 @@ Value *code_buffer::castTy (Type *srcTy, Type *tgtTy, Value *v)
 	return nullptr;
     }
 
-} // code_buffer::castTy
+} // Context::castTy
 
-llvm::Function *code_buffer::_getIntrinsic (llvm::Intrinsic::ID id, Type *ty) const
+llvm::Function *Context::_getIntrinsic (llvm::Intrinsic::ID id, llvm::Type *ty) const
 {
     return llvm::Intrinsic::getDeclaration (
-	this->_module, id, llvm::ArrayRef<Type *>(ty));
+	this->_module, id, llvm::ArrayRef<llvm::Type *>(ty));
 }
 
-std::unique_ptr<CodeObject> code_buffer::compile ()
+std::unique_ptr<CodeObject> Context::compile ()
 {
     /* generate code into the object-file backing store */
     this->_gen->compile (this);
@@ -642,23 +645,23 @@ std::unique_ptr<CodeObject> code_buffer::compile ()
     return CodeObject::create (this);
 }
 
-void code_buffer::dumpAsm () const
+void Context::dumpAsm () const
 {
     this->_gen->dumpCode (this->_module, "-", true);
 }
 
-void code_buffer::dumpAsm (std::string const &stem) const
+void Context::dumpAsm (std::string const &stem) const
 {
     this->_gen->dumpCode (this->_module, stem, true);
 }
 
-void code_buffer::dumpObj (std::string const &stem) const
+void Context::dumpObj (std::string const &stem) const
 {
     this->_gen->dumpCode (this->_module, stem, false);
 }
 
 // dump the current module to stderr
-void code_buffer::dump () const
+void Context::dump () const
 {
 #if defined(_DEBUG) || defined(LLVM_ENABLE_DUMP)
     this->_module->dump();
@@ -666,7 +669,10 @@ void code_buffer::dump () const
 }
 
 // run the LLVM verifier on the module
-bool code_buffer::verify () const
+bool Context::verify () const
 {
     return llvm::verifyModule (*this->_module, &llvm::dbgs());
 }
+
+} // namespace cfgcg
+} // namespace smlnj

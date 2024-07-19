@@ -19,8 +19,16 @@
 #include "llvm/IR/Value.h"
 
 #include "cfg.hpp"
-#include "code-buffer.hpp"
+#include "context.hpp"
 #include "target-info.hpp"
+
+#if defined(ARCH_AMD64)
+#define HOST_ARCH "x86_64"
+#elif defined(ARCH_ARM64)
+#define HOST_ARCH "aarch64"
+#else
+#  error unknown architeture
+#endif
 
 /// different output targets
 enum class output { PrintAsm, AsmFile, ObjFile, Memory };
@@ -139,22 +147,22 @@ int main (int argc, char **argv)
 //! points to a dynamically allocated code buffer; this pointer gets
 //! reset if we change the target architecture.
 //
-static code_buffer *CodeBuf = nullptr;
+static smlnj::cfgcg::Context *gContext = nullptr;
 
 /// set the target machine
 //
 bool setTarget (std::string const &target)
 {
-    if (CodeBuf != nullptr) {
-	if (CodeBuf->targetInfo()->name == target) {
+    if (gContext != nullptr) {
+	if (gContext->targetInfo()->name == target) {
 	    return false;
 	}
-	delete CodeBuf;
+	delete gContext;
     }
 
-    CodeBuf = code_buffer::create (target);
+    gContext = smlnj::cfgcg::Context::create (target);
 
-    return (CodeBuf == nullptr);
+    return (gContext == nullptr);
 
 }
 
@@ -195,7 +203,7 @@ class Timer {
 
 void codegen (std::string const & src, bool emitLLVM, bool dumpBits, output out)
 {
-    assert (CodeBuf != nullptr && "call setTarget before calling codegen");
+    assert (gContext != nullptr && "call setTarget before calling codegen");
 
     asdl::file_instream inS(src);
 
@@ -207,31 +215,31 @@ void codegen (std::string const & src, bool emitLLVM, bool dumpBits, output out)
     // generate LLVM
     std::cout << " generate llvm ..." << std::flush;;
     Timer genTimer = Timer::start();
-    cu->codegen (CodeBuf);
+    cu->codegen (gContext);
     std::cout << " " << genTimer.msec() << "ms\n" << std::flush;
 
     if (emitLLVM) {
-	CodeBuf->dump ();
+	gContext->dump ();
     }
 
-    if (! CodeBuf->verify ()) {
+    if (! gContext->verify ()) {
 	std::cerr << "Module verified\n";
     }
 
     std::cout << " optimize ..." << std::flush;;
     Timer optTimer = Timer::start();
-    CodeBuf->optimize ();
+    gContext->optimize ();
     std::cout << " " << optTimer.msec() << "ms\n" << std::flush;
 
 //    if (emitLLVM) {
-//	CodeBuf->dump ();
+//	gContext->dump ();
 //    }
 
-    if (! CodeBuf->verify ()) {
+    if (! gContext->verify ()) {
 	std::cerr << "Module verified after optimization\n";
     }
 
-  // get the stem of the filename
+    // get the stem of the filename
     std::string stem(src);
     auto pos = stem.rfind(".pkl");
     if (pos+4 != stem.size()) {
@@ -243,22 +251,22 @@ void codegen (std::string const & src, bool emitLLVM, bool dumpBits, output out)
 
     switch (out) {
       case output::PrintAsm:
-	CodeBuf->dumpAsm();
+	gContext->dumpAsm();
 	break;
       case output::AsmFile:
-	CodeBuf->dumpAsm (stem);
+	gContext->dumpAsm (stem);
 	break;
       case output::ObjFile:
-	CodeBuf->dumpObj (stem);
+	gContext->dumpObj (stem);
 	break;
       case output::Memory: {
-	    auto obj = CodeBuf->compile ();
+	    auto obj = gContext->compile ();
 	    if (obj) {
 		obj->dump(dumpBits);
 	    }
 	} break;
     }
 
-    CodeBuf->endModule();
+    gContext->endModule();
 
 } /* codegen */

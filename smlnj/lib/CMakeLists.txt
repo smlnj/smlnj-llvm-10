@@ -11,13 +11,13 @@ set(SRCS
   cfg-init.cpp
   cfg-prim-codegen.cpp
   cfg.cpp
-  code-buffer.cpp
+  cm-registers.cpp
+  context.cpp
   code-object.cpp
   lambda-var.cpp
   mc-gen.cpp
   objfile-pwrite-stream.cpp
   overflow.cpp
-  sml-registers.cpp
   target-info.cpp)
 
 add_library(CFGCodeGen STATIC ${SRCS})

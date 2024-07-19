@@ -17,6 +17,9 @@
 #include <vector>
 #include "llvm/Object/ObjectFile.h"
 
+namespace smlnj {
+namespace cfgcg {
+
 struct TargetInfo;
 
 //==============================================================================
@@ -140,7 +143,7 @@ public:
     virtual ~CodeObject ();
 
     /// create a code object.
-    static std::unique_ptr<CodeObject> create (class code_buffer *codeBuf);
+    static std::unique_ptr<CodeObject> create (class Context *codeBuf);
 
     /// return the size of the code in bytes
     size_t size() const { return this->_szb; }
@@ -250,5 +253,8 @@ public:
     virtual std::string _relocTypeToString (uint64_t ty) = 0;
 
 }; // CodeObject
+
+} // namespace cfgcg
+} // namespace smlnj
 
 #endif /// _CODE_OBJECT_HPP_

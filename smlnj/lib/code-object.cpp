@@ -13,7 +13,7 @@
 #include <iostream>
 #include "target-info.hpp"
 #include "code-object.hpp"
-#include "code-buffer.hpp"
+#include "context.hpp"
 #include "llvm/Support/Error.h"
 #include "llvm/Support/MemoryBuffer.h"
 
@@ -36,6 +36,9 @@ extern void Die (const char *, ...);
 #else
 #  error unknown operating system
 #endif
+
+namespace smlnj {
+namespace cfgcg {
 
 static llvm::ExitOnError exitOnErr;
 
@@ -196,7 +199,7 @@ Relocation::Relocation (Section const &sect, llvm::object::RelocationRef const &
 // creation function for code objects; we assume that the code has already
 // been generated into the code buffer's backing store (see mc_gen::compile).
 //
-std::unique_ptr<CodeObject> CodeObject::create (code_buffer *codeBuf)
+std::unique_ptr<CodeObject> CodeObject::create (Context *codeBuf)
 {
     // create the LLVM object file
     auto memBuf =
@@ -437,3 +440,6 @@ void CodeObject::_dumpRelocs (llvm::object::SectionRef const &sect)
     }
 
 }
+
+} // namespace cfgcg
+} // namespace smlnj

@@ -17,23 +17,28 @@
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/IR/LegacyPassManager.h"
 
-class mc_gen {
+namespace smlnj {
+namespace cfgcg {
+
+class MCGen {
   public:
 
-    mc_gen (llvm::LLVMContext &context, const TargetInfo *target);
+    MCGen (llvm::LLVMContext &context, const TargetInfo *target);
 
-    // per-module initialization and finalization
+    /// per-module initialization
     void beginModule (llvm::Module *module);
+
+    /// per-module finalization
     void endModule ();
 
-    //! run the per-function optimizations over the functions of the module
+    /// run the per-function optimizations over the functions of the module
     void optimize (llvm::Module *module);
 
-    //! dump the code to an output file
+    /// dump the code to an output file
     void dumpCode (llvm::Module *module, std::string const & stem, bool asmCode = true) const;
 
-    //! compile the code into the code buffer's object-file backing store.
-    void compile (class code_buffer *codeBuf);
+    /// compile the code into the code buffer's object-file backing store.
+    void compile (class Context *codeBuf);
 
   private:
     const TargetInfo *_tgtInfo;
@@ -41,5 +46,8 @@ class mc_gen {
     std::unique_ptr<llvm::legacy::FunctionPassManager> _passMngr;
 
 };
+
+} // namespace cfgcg
+} // namespace smlnj
 
 #endif // !_MC_GEN_HPP_

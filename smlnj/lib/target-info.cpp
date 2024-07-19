@@ -10,6 +10,9 @@
 
 #include "target-info.hpp"
 
+namespace smlnj {
+namespace cfgcg {
+
 #if defined(OPSYS_DARWIN)
 constexpr const char *kVendor = "apple";
 constexpr const char *kOS = "macosx";
@@ -99,7 +102,7 @@ static TargetInfo X86_64Info = {
     };
 #endif
 
-static const TargetInfo *Targets[] = {
+static TargetInfo const *Targets[] = {
 #if defined(ENABLE_X86)
 	&X86_64Info,
 #endif
@@ -129,7 +132,7 @@ std::vector<std::string> TargetInfo::targetNames ()
     return targetNames;
 }
 
-const TargetInfo *TargetInfo::infoForTarget (std::string const &name)
+TargetInfo const *TargetInfo::infoForTarget (std::string const &name)
 {
     for (int i = 0;  i < kNumTargets;  i++) {
 	if (Targets[i]->name == name) {
@@ -144,3 +147,6 @@ llvm::Triple TargetInfo::getTriple() const
 {
     return llvm::Triple(this->name, kVendor, kOS);
 }
+
+} // namespace cfgcg
+} // namespace smlnj

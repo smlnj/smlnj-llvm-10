@@ -10,7 +10,7 @@
 
 #include "target-info.hpp"
 #include "mc-gen.hpp"
-#include "code-buffer.hpp"
+#include "context.hpp"
 
 #include "llvm/Support/TargetRegistry.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
@@ -23,8 +23,10 @@
 
 #include <iostream>
 
+namespace smlnj {
+namespace cfgcg {
 
-mc_gen::mc_gen (llvm::LLVMContext &context, const TargetInfo *info)
+MCGen::MCGen (llvm::LLVMContext &context, const TargetInfo *info)
   : _tgtInfo(info)
 {
   // get the LLVM target triple
@@ -68,9 +70,9 @@ mc_gen::mc_gen (llvm::LLVMContext &context, const TargetInfo *info)
 
     this->_tgtMachine = std::move(tgtMachine);
 
-} // mc_gen constructor
+} // MCGen constructor
 
-void mc_gen::beginModule (llvm::Module *module)
+void MCGen::beginModule (llvm::Module *module)
 {
   // tell the module about the target machine
     module->setTargetTriple(this->_tgtMachine->getTargetTriple().getTriple());
@@ -102,14 +104,14 @@ void mc_gen::beginModule (llvm::Module *module)
 
     this->_passMngr->doInitialization();
 
-} // mc_gen::beginModule
+} // MCGen::beginModule
 
-void mc_gen::endModule ()
+void MCGen::endModule ()
 {
     this->_passMngr.reset();
 }
 
-void mc_gen::optimize (llvm::Module *module)
+void MCGen::optimize (llvm::Module *module)
 {
   // run the function optimizations over every function
     for (auto it = module->begin();  it != module->end();  ++it) {
@@ -122,7 +124,7 @@ void mc_gen::optimize (llvm::Module *module)
 //
 // adopted from SimpleCompiler::operator() (lib/ExecutionEngine/Orc/CompileUtils.cpp)
 //
-void mc_gen::compile (code_buffer *codeBuf)
+void MCGen::compile (Context *codeBuf)
 {
     {
         codeBuf->objectFileOS().clear();
@@ -136,7 +138,7 @@ void mc_gen::compile (code_buffer *codeBuf)
 
 }
 
-void mc_gen::dumpCode (llvm::Module *module, std::string const & stem, bool asmCode) const
+void MCGen::dumpCode (llvm::Module *module, std::string const & stem, bool asmCode) const
 {
     std::string outFile;
     if (stem != "-") {
@@ -203,3 +205,6 @@ void mc_gen::dumpCode (llvm::Module *module, std::string const & stem, bool asmC
     outStrm.flush();
 
 }
+
+} // namespace cfgcg
+} // namespace smlnj

@@ -10,7 +10,7 @@
 /// \author John Reppy
 ///
 
-#include "code-buffer.hpp"
+#include "context.hpp"
 #include "target-info.hpp"
 #include "cfg.hpp" // for argument setup
 
@@ -18,11 +18,13 @@
 #include "llvm/IR/GlobalValue.h"
 #include "llvm/IR/GlobalVariable.h"
 
+namespace smlnj {
+namespace cfgcg {
 
 // return the basic-block that contains the Overflow trap generator
 // We also update the PHI nodes for the overflow basic block.
 //
-llvm::BasicBlock *code_buffer::getOverflowBB ()
+llvm::BasicBlock *Context::getOverflowBB ()
 {
     auto srcBB = this->_builder.GetInsertBlock ();
     int nArgs = this->_regInfo.numMachineRegs();
@@ -39,7 +41,7 @@ llvm::BasicBlock *code_buffer::getOverflowBB ()
 	args.reserve (nArgs);
 	for (int i = 0;  i < nArgs;  ++i) {
 	    llvm::Type *ty;
-	    if (this->_regInfo.machineReg(i)->id() <= sml_reg_id::STORE_PTR) {
+	    if (this->_regInfo.machineReg(i)->id() <= CMRegId::STORE_PTR) {
 		ty = this->objPtrTy;
 	    } else {
 		ty = this->mlValueTy;
@@ -50,7 +52,8 @@ llvm::BasicBlock *code_buffer::getOverflowBB ()
 	}
 
       // fetch the raise_overflow code address from the stack
-	Value *raiseFn = _loadFromStack (this->_target->raiseOvflwOffset, "raiseOverflow");
+	llvm::Value *raiseFn =
+            _loadFromStack (this->_target->raiseOvflwOffset, "raiseOverflow");
 
       // call the raise_overflow function  We use a non-tail call here so that the return
       // address, which is in the faulting module, is pushed on the stack and made available
@@ -71,7 +74,7 @@ llvm::BasicBlock *code_buffer::getOverflowBB ()
 
   // add PHI-node dependencies
     for (int i = 0;  i < nArgs;  ++i) {
-	reg_info const *rInfo = this->_regInfo.machineReg(i);
+	CMRegInfo const *rInfo = this->_regInfo.machineReg(i);
 	this->_overflowPhiNodes[i]->addIncoming(this->_regState.get (rInfo->id()), srcBB);
     }
 
@@ -81,9 +84,12 @@ llvm::BasicBlock *code_buffer::getOverflowBB ()
 
 // get the branch-weight meta data for overflow branches
 //
-llvm::MDNode *code_buffer::overflowWeights ()
+llvm::MDNode *Context::overflowWeights ()
 {
   // we use 1/1000 as the probability of an overflow
     return this->branchProb(1);
 
 } // code_buffer::overflowWeights
+
+} // namespace cfgcg
+} // namespace smlnj
